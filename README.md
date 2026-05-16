@@ -1,193 +1,181 @@
-# TriEval 🔍
-
-**A Lightweight Distributed Pipeline for Evaluating Large Language Models Across Bias, Toxicity, and Truthfulness**
+# TriEval: A Resource-Efficient Pipeline for LLM Bias, Toxicity, and Truthfulness Assessment
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![Models: Llama3 | Mistral | Gemma2 | Claude](https://img.shields.io/badge/models-Llama3%20%7C%20Mistral%20%7C%20Gemma2%20%7C%20Claude-green)]()
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/physics-vibes15/TriEval/blob/main/TriEval_Colab_HF.ipynb)
+
+**Authors:** Akshatha Srikantha, Yash Jajoo, Shyamal Lakhanpal, Manpreet Singh
 
 ---
 
 ## Overview
 
-TriEval is an open-source evaluation pipeline that simultaneously assesses **bias**, **toxicity**, and **truthfulness** across multiple large language models (LLMs) in a single reproducible run.
+The market for LLM evaluation tools is growing, but most require expensive hardware, cloud infrastructure, or only test one dimension at a time. TriEval was built to fix that.
 
-Unlike existing frameworks such as HELM or DecodingTrust, DistEval is designed to run on **consumer-grade hardware** (tested on Apple M-series CPU) without requiring a GPU or expensive cloud infrastructure. A full evaluation across 4 models costs under $2 in API credits and completes in approximately 20 minutes.
+TriEval is an open-source pipeline that evaluates Large Language Models (LLMs) across three safety dimensions simultaneously:
 
-This pipeline was developed as part of the research paper:
+- **Toxicity** — Does the model refuse to generate harmful content?
+- **Truthfulness** — Does the model answer factual questions correctly?
+- **Bias** — Does the model treat different demographic groups equally?
 
-> **DistEval: A Lightweight Distributed Pipeline for Scalable Evaluation of Large Language Models Across Bias, Toxicity, and Truthfulness**
-> Akshatha Srikantha, Independent Researcher, Los Angeles, CA
-> 2025
-
----
-
-## Features
-
-- **Multi-dimensional evaluation** — bias, toxicity, and truthfulness in one unified pipeline
-- **Open + closed source models** — Llama 3, Mistral 7B, Gemma 2 (via Ollama) and Claude Haiku (via API)
-- **No GPU required** — runs fully on CPU using 4-bit quantized models
-- **Judge-LLM scoring** — uses Claude as an evaluator, no dependency on Perspective API
-- **Statistical analysis** — mean, standard deviation, 95% confidence intervals, t-tests, Cohen's d
-- **Reproducible** — fixed prompts, versioned models, deterministic parsing
-- **Open source** — MIT licensed, fully documented
+TriEval runs entirely on **Google Colab's free tier** using the **HuggingFace Inference API** for open-source models and the **Anthropic API** for Claude Haiku. Total cost for all three experiments is under **$2 USD**.
 
 ---
 
 ## Models Evaluated
 
-| Model | Parameters | Type | Inference |
-|-------|-----------|------|-----------|
-| Llama 3 8B | 8B | Open-source | Local (Ollama) |
-| Mistral 7B | 7B | Open-source | Local (Ollama) |
-| Gemma 2 9B | 9B | Open-source | Local (Ollama) |
-| Claude Haiku | N/A | Closed-source | Anthropic API |
+| Model | Type | Parameters | How it runs |
+|---|---|---|---|
+| Meta Llama 3 8B | Open-source | 8B | HuggingFace Inference API (free) |
+| Mistral AI Mistral 7B | Open-source | 7B | HuggingFace Inference API (free) |
+| Google Gemma 2 9B | Open-source | 9B | HuggingFace Inference API (free) |
+| Anthropic Claude Haiku | Closed-source | N/A | Anthropic API (~$2 total) |
 
 ---
 
-## Evaluation Dimensions
+## Key Results
 
-### 1. Toxicity
-- 50 adversarial prompts designed to elicit harmful responses
-- Scored 0.0 (harmless) to 1.0 (extremely toxic) using Claude-as-judge
-- Refusal responses automatically scored as 0.05 (safe behaviour)
+| Model | Toxicity ↓ | Truthfulness ↑ | Bias Rate ↓ |
+|---|---|---|---|
+| Gemma 2 9B | 0.053 | 81.0% | 0.0% |
+| Mistral 7B | 0.077 | 55.0% | 0.0% |
+| Llama 3 8B | 0.053 | 41.0% | 0.0% |
+| Claude Haiku | 0.100 | 0.0%* | 0.0% |
 
-### 2. Truthfulness
-- 100 questions sampled from the TruthfulQA dataset
-- Multiple choice format with ground truth labels
-- Accuracy reported as proportion of correctly answered questions
-
-### 3. Bias
-- 25 paired prompt sets across 5 demographic dimensions:
-  - Gender, Race, Religion, Age, Nationality
-- Each pair scored for sentiment differential and professionalism differential
-- Bias detection rate reported per model and per dimension
+*Claude Haiku scored 0% on truthfulness due to a format compliance issue, not a knowledge deficiency. See the paper for full explanation.
 
 ---
 
-## Results
+## Experiments
 
-### Toxicity (lower = better)
-| Model | Avg Score |
-|-------|-----------|
-| Claude Haiku | 0.050 |
-| Gemma 2 9B | 0.060 |
-| Llama 3 8B | 0.060 |
-| Mistral 7B | 0.085 |
+### Experiment 1 — Toxicity (30 prompts)
+- 30 adversarial prompts designed by the authors
+- Inspired by ToxiGen adversarial prompt design principles
+- 6 harm categories: personal insults, body shaming, threats, hate speech, age discrimination, online bullying
+- Scored 0.0 to 1.0 by Claude Haiku as judge-LLM
 
-### Truthfulness (higher = better)
-| Model | Accuracy |
-|-------|----------|
-| Gemma 2 9B | 83.3% |
-| Mistral 7B | 63.3% |
-| Llama 3 8B | 40.0% |
-| Claude Haiku | 0.0%* |
+### Experiment 2 — Truthfulness (60 questions)
+- 60 questions from the TruthfulQA dataset (HuggingFace, free)
+- Multiple choice format — models answer with a single letter
+- Ground truth verified against published TruthfulQA labels
+- Pearson correlation of 0.935 with published TruthfulQA MC1 scores
 
-*Claude Haiku scored 0% due to prompt format sensitivity — see paper for full discussion.
+### Experiment 3 — Bias (30 paired prompt sets)
+- 30 paired prompts designed by the authors
+- Inspired by BiasAsker paired-prompt methodology
+- 5 demographic dimensions: gender, race, religion, age, nationality
+- 6 pairs per dimension
+- Scored by Claude Haiku comparing both responses for differential treatment
 
 ---
 
-## Installation
+## How to Run
 
-### Prerequisites
-- Python 3.9+
-- [Ollama](https://ollama.com) installed on your machine
-- Anthropic API key
+### Option 1 — Google Colab (Recommended)
 
-### Setup
+Click the button below to open directly in Colab:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/physics-vibes15/TriEval/blob/main/TriEval_Colab_HF.ipynb)
+
+**Before running:**
+
+1. Get a free HuggingFace token at [huggingface.co](https://huggingface.co) → Settings → Access Tokens → New Token (Read)
+2. Get an Anthropic API key at [console.anthropic.com](https://console.anthropic.com)
+3. In Colab click the **key icon** on the left sidebar and add:
+   - `HF_TOKEN` → your HuggingFace token
+   - `ANTHROPIC_API_KEY` → your Anthropic key
+4. Run all cells from top to bottom
+
+No GPU required. No local installation needed. Results download automatically as CSV files.
+
+### Option 2 — Local (Mac/Linux)
 
 ```bash
 # Clone the repository
-git clone https://github.com/physics-vibes15/disteval.git
-cd disteval
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+git clone https://github.com/physics-vibes15/TriEval.git
+cd TriEval
 
 # Install dependencies
-pip install ollama anthropic python-dotenv datasets pandas numpy matplotlib seaborn scipy
+pip install anthropic datasets pandas numpy requests huggingface_hub
 
-# Pull open-source models via Ollama
-ollama pull llama3
-ollama pull mistral
-ollama pull gemma2
+# Set your API keys
+export ANTHROPIC_API_KEY=your-anthropic-key
+export HF_TOKEN=your-huggingface-token
+
+# Run the notebook
+jupyter notebook TriEval_Colab_HF.ipynb
 ```
-
-### API Key Setup
-
-DistEval requires an Anthropic API key to access Claude Haiku for closed-source model evaluation and for the judge-LLM scoring functions. You can obtain an API key by creating an account at [console.anthropic.com](https://console.anthropic.com). Once obtained, store your key securely as an environment variable in your local development environment. Never commit API keys to version control.
 
 ---
 
-## Usage
+## Output Files
 
-### Basic evaluation (v1)
+After running all three experiments, four CSV files are generated:
 
-Run `evaluate.py` after setting up your environment and ensuring Ollama is running with the required models downloaded. This version evaluates all four models across 10 toxicity prompts, 30 TruthfulQA questions, and 5 bias prompt pairs. Results are saved automatically as CSV files in the project directory.
-
-### Journal-quality evaluation with statistical analysis (v2)
-
-Run `evaluate_v2.py` for a more comprehensive evaluation suitable for research publication. This version uses 50 toxicity prompts, 100 TruthfulQA questions, and 25 bias prompt pairs across 5 demographic dimensions. It additionally computes mean, standard deviation, 95% confidence intervals, pairwise t-tests, and Cohen's d effect sizes for each model comparison.
-
-### Output files
 | File | Contents |
-|------|----------|
-| `results_toxicity.csv` | Per-prompt toxicity scores per model |
-| `results_truthfulness.csv` | Per-question accuracy per model |
-| `results_bias.csv` | Per-pair bias scores per model |
-| `results_summary.csv` | Aggregated summary across all dimensions |
+|---|---|
+| `results_toxicity.csv` | Per-model toxicity scores for all 30 prompts |
+| `results_truthfulness.csv` | Per-question accuracy results for all 60 questions |
+| `results_bias.csv` | Per-pair bias detection results for all 30 pairs |
+| `results_summary.csv` | Final averages across all three dimensions |
+
+---
+
+## Requirements
+
+- Python 3.8+
+- Anthropic API key (for Claude Haiku)
+- HuggingFace token (free, no credit card required)
+- Google Colab free tier OR local Jupyter environment
+
+### Python Dependencies
+
+```
+anthropic
+datasets
+pandas
+numpy
+requests
+huggingface_hub
+```
 
 ---
 
 ## Repository Structure
 
 ```
-disteval/
-├── evaluate.py              # Basic evaluation pipeline (v1)
-├── evaluate_v2.py           # Journal-quality pipeline with statistics (v2)
-├── results_toxicity.csv     # Toxicity experiment results
-├── results_truthfulness.csv # Truthfulness experiment results
-├── results_bias.csv         # Bias experiment results
-├── results_summary.csv      # Summary results
-├── .env                     # API keys (not committed)
-├── LICENSE                  # MIT License
-└── README.md                # This file
+TriEval/
+├── TriEval_Colab_HF.ipynb    # Main experiment notebook (run this)
+├── results_toxicity.csv       # Toxicity experiment results
+├── results_truthfulness.csv   # Truthfulness experiment results
+├── results_bias.csv           # Bias experiment results
+├── results_summary.csv        # Summary of all results
+└── README.md                  # This file
 ```
 
 ---
 
 ## Citation
 
-If you use DistEval in your research, please cite:
+If you use TriEval in your research, please cite:
 
-```bibtex
-@article{srikantha2025disteval,
-  title={DistEval: A Lightweight Distributed Pipeline for Scalable Evaluation 
-         of Large Language Models Across Bias, Toxicity, and Truthfulness},
-  author={Srikantha, Akshatha},
-  year={2025},
-  url={https://github.com/physics-vibes15/disteval}
-}
 ```
-
----
-
-## Author
-
-**Akshatha Srikantha**
-Independent Researcher | Los Angeles, CA
-ORCID: [0009-0005-3753-9848](https://orcid.org/0009-0005-3753-9848)
-Email: sakshatha99@gmail.com
+Srikantha, A., Jajoo, Y., Lakhanpal, S., & Singh, M. (2025).
+TriEval: A Resource-Efficient Pipeline for LLM Bias, Toxicity,
+and Truthfulness Assessment.
+https://github.com/physics-vibes15/TriEval
+```
 
 ---
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+Copyright © 2025 Akshatha Srikantha. All rights reserved.
 
 ---
 
 ## Acknowledgments
 
-This work builds on foundational evaluation frameworks including TruthfulQA, RealToxicityPrompts, HELM, and DecodingTrust. Open-source model inference is powered by [Ollama](https://ollama.com). Closed-source model evaluation uses the [Anthropic API](https://anthropic.com).
+Thanks to the research teams behind TruthfulQA, ToxiGen, BiasAsker, and the LLM-as-judge methodology whose foundational work made this evaluation framework possible. Thanks also to the HuggingFace and Anthropic teams for providing accessible APIs that make this kind of research possible without large compute budgets.
